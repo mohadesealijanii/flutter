@@ -1,6 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
+
+import 'package:my_app/Model/Currency.dart';
 
 void main() {
   runApp(MyApp());
@@ -22,9 +26,15 @@ class MyApp extends StatelessWidget {
           displayLarge: TextStyle(
             fontFamily: 'irancell',
             fontSize: 16,
-            fontWeight: FontWeight.w200,
+            fontWeight: FontWeight.w400,
           ),
           displayMedium: TextStyle(
+            fontFamily: 'irancell',
+            fontSize: 12,
+            fontWeight: FontWeight.w300,
+            height: 1.3,
+          ),
+          displaySmall: TextStyle(
             fontFamily: 'irancell',
             fontSize: 14,
             fontWeight: FontWeight.w300,
@@ -32,8 +42,18 @@ class MyApp extends StatelessWidget {
           ),
           bodyLarge: TextStyle(
             fontFamily: 'irancell',
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w300,
+          ),
+          bodyMedium: TextStyle(
+            fontFamily: 'irancell',
+            fontSize: 12,
+            fontWeight: FontWeight.w200,
+          ),
+          bodySmall: TextStyle(
+            fontFamily: 'irancell',
+            fontSize: 11,
+            fontWeight: FontWeight.w100,
           ),
         ),
       ),
@@ -43,15 +63,50 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Home extends StatelessWidget {
-  const Home({super.key});
+class Home extends StatefulWidget {
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  // const Home({super.key});
+  List<Currency> currency = [];
+
+  getResponse() {
+    var url = 'http://sasansafari.com/flutter/api.php?access_key=flutter123456';
+    http.get(Uri.parse(url)).then((value) {
+      print((value.statusCode));
+      if (currency.isEmpty) {
+        if (value.statusCode == 200) {
+          List jsonList = convert.jsonDecode(value.body);
+
+          if (jsonList.isNotEmpty) {
+            for (int i = 0; i < jsonList.length; i++) {
+              setState(() {
+                currency.add(
+                  Currency(
+                    id: jsonList[i]["id"],
+                    title: jsonList[i]["title"],
+                    price: jsonList[i]["price"],
+                    changes: jsonList[i]["changes"],
+                    status: jsonList[1]["status"],
+                  ),
+                );
+              });
+            }
+          }
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    getResponse();
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 243, 243, 243),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Color.fromARGB(255, 243, 243, 243),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -61,7 +116,7 @@ class Home extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              " به روز ارز و سکه",
+              "  به روز ارز و سکه",
               style: Theme.of(context).textTheme.displayLarge,
             ),
           ),
@@ -75,7 +130,7 @@ class Home extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(28.0),
+        padding: const EdgeInsets.all(18.0),
         child: Column(
           children: [
             Row(
@@ -92,7 +147,7 @@ class Home extends StatelessWidget {
             SizedBox(height: 12),
             Text(
               "نرخ ارزها در معاملات نقدی و رایج روزانه است، معاملات نقدری معاملاتی هستند که خریدار و فروشنده به محض انجام معامله، ارز و ریال را با هم تبادل می‌نمایند.",
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: Theme.of(context).textTheme.displayMedium,
               textDirection: TextDirection.rtl,
             ),
             Padding(
@@ -108,15 +163,15 @@ class Home extends StatelessWidget {
                   children: [
                     Text(
                       "نام آزاد ارز",
-                      style: Theme.of(context).textTheme.displayMedium,
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
                     Text(
                       "قیمت",
-                      style: Theme.of(context).textTheme.displayMedium,
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
                     Text(
                       "تغییر",
-                      style: Theme.of(context).textTheme.displayMedium,
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
                   ],
                 ),
@@ -127,11 +182,11 @@ class Home extends StatelessWidget {
               height: 350,
               child: ListView.separated(
                 physics: BouncingScrollPhysics(),
-                itemCount: 20,
+                itemCount: currency.length,
                 itemBuilder: (BuildContext context, int position) {
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-                    child: MyItem(),
+                    child: MyItem(position, currency),
                   );
                 },
                 separatorBuilder: (BuildContext context, int index) {
@@ -143,53 +198,57 @@ class Home extends StatelessWidget {
                 },
               ),
             ),
-            Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 232, 232, 232),
-                borderRadius: BorderRadius.circular(1000),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(
-                    height: 50,
-                    child: TextButton.icon(
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStateProperty.all(
-                          Color.fromARGB(255, 202, 193, 255),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+              child: Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Color.fromARGB(255, 232, 232, 232),
+                  borderRadius: BorderRadius.circular(1000),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      height: 50,
+                      child: TextButton.icon(
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(
+                            Color.fromARGB(255, 202, 193, 255),
+                          ),
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(1000),
+                                ),
+                              ),
                         ),
-                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(1000),
+                        onPressed: () => _showSnackBar(
+                          context,
+                          "به روز رسانی با موفقیت انجام شد!",
+                        ),
+                        icon: Icon(
+                          Icons.refresh,
+                          color: Colors.black,
+                          size: 24,
+                        ),
+                        //update button box
+                        label: Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
+                          child: Text(
+                            "به روز رسانی",
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
                       ),
-                      onPressed: () => _showSnackBar(
-                        context,
-                        "به روز رسانی با موفقیت انجام شد!",
-                      ),
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: Colors.black,
-                        size: 24,
-                      ),
-                      //update button box
-                      label: Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
-                        child: Text(
-                          "به روز رسانی",
-                          style: Theme.of(context).textTheme.displayLarge,
-                        ),
-                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
-                    child: Text("آخرین به روز رسانی: ${_getTime()}"),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
+                      child: Text("آخرین به روز رسانی: ${_getTime()}"),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -205,15 +264,15 @@ class Home extends StatelessWidget {
 
 void _showSnackBar(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(msg, style: Theme.of(context).textTheme.bodyLarge),
-      backgroundColor: Colors.white,
-    ),
+    SnackBar(content: Text(msg), backgroundColor: Colors.green),
+    // style: Theme.of(context).textTheme.bodyLarge  );
   );
 }
 
 class MyItem extends StatelessWidget {
-  const MyItem({super.key});
+  int position;
+  List<Currency> currency;
+  MyItem(this.position, this.currency);
 
   @override
   Widget build(BuildContext context) {
@@ -228,11 +287,20 @@ class MyItem extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text("دلار", style: Theme.of(context).textTheme.bodyLarge),
+          Text(
+            currency[position].title!,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
 
-          Text("90000", style: Theme.of(context).textTheme.bodyLarge),
+          Text(
+            currency[position].price!,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
 
-          Text("+3", style: Theme.of(context).textTheme.bodyLarge),
+          Text(
+            currency[position].changes!,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -244,19 +312,24 @@ class Ads extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        boxShadow: <BoxShadow>[BoxShadow(blurRadius: 1.0, color: Colors.grey)],
-        color: Colors.red,
-        borderRadius: BorderRadius.circular(1000),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Text("تبلیغات", style: Theme.of(context).textTheme.bodyMedium),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          boxShadow: <BoxShadow>[
+            BoxShadow(blurRadius: 1.0, color: Colors.grey),
+          ],
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(1000),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Text("تبلیغات", style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
       ),
     );
   }

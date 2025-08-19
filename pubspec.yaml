@@ -11,6 +11,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  http: ^1.5.0
 
 flutter_icons: ^1.1.0
 cupertino_icons: ^1.0.8
@@ -26,10 +27,16 @@ flutter:
   assets:
     - assets/
 
-fonts: 
-  - family: irancell
-    fonts:
-    - asset: assets/fonts/irancell1.ttf
-      weight: 200
-    - asset: assets/fonts/irancell2.ttf
-      weight: 400
+  fonts:
+    - family: irancell
+      fonts:
+        - asset: assets/fonts/Irancell1.ttf
+          weight: 200
+        - asset: assets/fonts/Irancell2.ttf
+          weight: 300
+        - asset: assets/fonts/Irancell3.ttf
+          weight: 400
+        - asset: assets/fonts/Irancell4.ttf
+          weight: 500
+        - asset: assets/fonts/Irancell5.ttf
+          weight: 600
