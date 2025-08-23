@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert' as convert;
-
 import 'package:my_app/Model/Currency.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'dart:convert' as convert;
+import 'dart:developer' as developer;
 
 void main() {
   runApp(MyApp());
@@ -69,40 +70,56 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  // const Home({super.key});
   List<Currency> currency = [];
+  bool isLoading = true;
 
-  getResponse() {
-    var url = 'http://sasansafari.com/flutter/api.php?access_key=flutter123456';
-    http.get(Uri.parse(url)).then((value) {
-      print((value.statusCode));
-      if (currency.isEmpty) {
-        if (value.statusCode == 200) {
-          List jsonList = convert.jsonDecode(value.body);
+  @override
+  void initState() {
+    super.initState();
+    fetchCurrency();
+  }
 
-          if (jsonList.isNotEmpty) {
-            for (int i = 0; i < jsonList.length; i++) {
-              setState(() {
-                currency.add(
-                  Currency(
-                    id: jsonList[i]["id"],
-                    title: jsonList[i]["title"],
-                    price: jsonList[i]["price"],
-                    changes: jsonList[i]["changes"],
-                    status: jsonList[1]["status"],
-                  ),
-                );
-              });
-            }
-          }
-        }
-      }
+  Future<void> fetchCurrency() async {
+    setState(() {
+      isLoading = true;
     });
+    var url = "http://sasansafari.com/flutter/api.php?access_key=flutter123456";
+    try {
+      var response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        List jsonList = convert.jsonDecode(response.body);
+        setState(() {
+          currency = jsonList
+              .map(
+                (e) => Currency(
+                  id: e["id"],
+                  title: e["title"],
+                  price: e["price"],
+                  changes: e["changes"],
+                  status: e["status"],
+                ),
+              )
+              .toList();
+          isLoading = false;
+        });
+        _showSnackBar(context, "به روزرسانی انجام شد!");
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        _showSnackBar(context, "خطا در دریافت اطلاعات");
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      _showSnackBar(context, "خطا در دریافت اطلاعات");
+      developer.log(e.toString());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    getResponse();
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 243, 243, 243),
       appBar: AppBar(
@@ -112,7 +129,6 @@ class _HomeState extends State<Home> {
             padding: const EdgeInsets.all(8.0),
             child: Image.asset("assets/icon.png", width: 40),
           ),
-
           Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -133,6 +149,7 @@ class _HomeState extends State<Home> {
         padding: const EdgeInsets.all(18.0),
         child: Column(
           children: [
+            // Info section
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
@@ -148,8 +165,9 @@ class _HomeState extends State<Home> {
             Text(
               "نرخ ارزها در معاملات نقدی و رایج روزانه است، معاملات نقدری معاملاتی هستند که خریدار و فروشنده به محض انجام معامله، ارز و ریال را با هم تبادل می‌نمایند.",
               style: Theme.of(context).textTheme.displayMedium,
-              textDirection: TextDirection.rtl,
             ),
+
+            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(0, 24, 0, 0),
               child: Container(
@@ -177,27 +195,26 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
+
+            // Currency List or Loader
             SizedBox(
               width: double.infinity,
               height: 350,
-              child: ListView.separated(
-                physics: BouncingScrollPhysics(),
-                itemCount: currency.length,
-                itemBuilder: (BuildContext context, int position) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-                    child: MyItem(position, currency),
-                  );
-                },
-                separatorBuilder: (BuildContext context, int index) {
-                  if (index % 9 == 0) {
-                    return Ads();
-                  } else {
-                    return SizedBox.shrink();
-                  }
-                },
-              ),
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.separated(
+                      physics: BouncingScrollPhysics(),
+                      itemCount: currency.length,
+                      itemBuilder: (context, position) => Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+                        child: MyItem(position, currency),
+                      ),
+                      separatorBuilder: (context, index) =>
+                          index % 9 == 0 ? Ads() : SizedBox.shrink(),
+                    ),
             ),
+
+            // Update Button & Last Update
             Padding(
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
               child: Container(
@@ -214,26 +231,24 @@ class _HomeState extends State<Home> {
                       height: 50,
                       child: TextButton.icon(
                         style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.all(
+                          backgroundColor: MaterialStateProperty.all(
                             Color.fromARGB(255, 202, 193, 255),
                           ),
                           shape:
-                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                              MaterialStateProperty.all<RoundedRectangleBorder>(
                                 RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(1000),
                                 ),
                               ),
                         ),
-                        onPressed: () => _showSnackBar(
-                          context,
-                          "به روز رسانی با موفقیت انجام شد!",
-                        ),
+                        onPressed: () {
+                          fetchCurrency();
+                        },
                         icon: Icon(
                           Icons.refresh,
                           color: Colors.black,
                           size: 24,
                         ),
-                        //update button box
                         label: Padding(
                           padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
                           child: Text(
@@ -244,8 +259,11 @@ class _HomeState extends State<Home> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
-                      child: Text("آخرین به روز رسانی: ${_getTime()}"),
+                      padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
+                      child: Text(
+                        "آخرین به روز رسانی: ${_getTime()}",
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
                   ],
                 ),
@@ -258,21 +276,15 @@ class _HomeState extends State<Home> {
   }
 
   String _getTime() {
-    return "20:45";
+    DateTime now = DateTime.now();
+    return DateFormat('kk:mm:ss').format(now);
   }
-}
-
-void _showSnackBar(BuildContext context, String msg) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: Colors.green),
-    // style: Theme.of(context).textTheme.bodyLarge  );
-  );
 }
 
 class MyItem extends StatelessWidget {
   int position;
   List<Currency> currency;
-  MyItem(this.position, this.currency);
+  MyItem(this.position, this.currency, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -291,14 +303,12 @@ class MyItem extends StatelessWidget {
             currency[position].title!,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-
           Text(
-            currency[position].price!,
+            getFarsiNumber(currency[position].price.toString()),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-
           Text(
-            currency[position].changes!,
+            getFarsiNumber(currency[position].changes.toString()),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
@@ -333,4 +343,20 @@ class Ads extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showSnackBar(BuildContext context, String msg) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
+}
+
+String getFarsiNumber(String number) {
+  const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+
+  en.forEach((element) {
+    number = number.replaceAll(element, fa[en.indexOf(element)]);
+  });
+  return number;
 }
